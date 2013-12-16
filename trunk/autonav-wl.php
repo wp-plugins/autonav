@@ -674,6 +674,10 @@ function get_subpages ($attr) {
   if ($attr['siblings']) {
     if ($post->post_parent) { // children of our parent
       $child_pages = array($post->post_parent);
+    } else {
+      if ($post->post_type == 'page') {
+	$child_pages = array(0); // children of home page
+      }
     }
     if (!$attr['self']) { // add ourselves to exception list
       $attr['exclude'][] = $post->ID;
@@ -848,6 +852,7 @@ function get_selposts($attr) {
   if (count($these_posts) == 0) {
     return;
   }
+
   return get_pics_info($attr, $these_posts);
 }
 
@@ -940,7 +945,7 @@ function an_create_output_excerpt ($html, $class, $pic, $attr) {
 }
 
 function an_create_page_links($html, $class, $total_pages, $cur_page) {
-  $html .= an_create_tag('p', array('class' => "{$class}-pages}"));
+  $html .= an_create_tag('p', array('class' => "{$class}-pages"));
   // Possibly permit override of 'next_text', 'prev_text', etc. - see /wp-includes/general_template.php
   $paginate_args = array('base' => get_permalink() . '%_%',
 			 'total' => $total_pages, 'current' => $cur_page, 'show_all' => 1);
@@ -962,6 +967,15 @@ add_filter('autonav_create_table_item', 'an_create_output_excerpt', 20, 4);
 add_filter('autonav_create_page_links', 'an_create_page_links', 10, 4);
 
 /* **** Main output function **** */
+
+function an_create_unit_class($attr, $pic, $class) {
+  if (is_object($pic['page'])) {
+    if ($pic['page']->ID == $attr['current']) {
+      $class .= ' ' . $class . '-current';
+    }
+  }
+  return $class;
+}
 
 function create_output($attr, $pic_info) {
 
@@ -996,12 +1010,13 @@ function create_output($attr, $pic_info) {
 
   if ($attr['display'] == 'list' || $attr['list']) { // Produce list output
     $html = an_create_tag(($attr['plain'] ? 'div': 'ul'), 
-			  array('class' => $class . ($attr['plain'] ? '' : '-list')));
+			  array('class' => $class) );
     foreach ($pic_info as $pic) { // well, really the page not a picture
       if ($attr['thumb']) {
 	prepare_picture($pic);
       }
-      $my_html = $attr['plain'] ? '' : an_create_tag('li', array('class' => $class . '-item'));
+
+      $my_html = $attr['plain'] ? '' : an_create_tag('li', array('class' => an_create_unit_class($attr, $pic, $class . '-item')));
       $html .= apply_filters('autonav_create_list_item', $my_html, $class, $pic, $attr);
       if (!$attr['plain']) { $html .= "</li>\n"; }
     }
@@ -1042,7 +1057,8 @@ function create_output($attr, $pic_info) {
 	}
 	$html .= $start_row; $in_row = 1;
       }
-      $my_html = an_create_tag('td', array('class' => $class . '-cell'));
+
+      $my_html = an_create_tag('td', array('class' => an_create_unit_class($attr, $pic, $class . '-cell')));
       $html .= apply_filters('autonav_create_table_item', $my_html, $class, $pic, $attr) . "</td>\n";
 
       $col++;
@@ -1165,6 +1181,7 @@ use: <b><tt>apt-get install php5-gd</tt></b> Use yum on RedHat/CentOS, or simila
   // Plugin/Theme can override here
   $attr = apply_filters('autonav_pre_select', $attr, $display_options);
 
+  $attr['current'] = $post->ID;
   if (($attr['display'] == 'list') || ($attr['display'] == 'images')) {
     $pic_info = get_subpages($attr);
   } elseif (substr($attr['display'],0,6) == 'attach') {
@@ -1241,7 +1258,6 @@ register_activation_hook( __FILE__, 'autonav_wlactivate' );
 
 function autonav_wloptions_validate($input) {
 
-  $x=print_r($input,1); syslog(LOG_INFO, $x);
   $plain_defaults = array('order' => 'ASC', 'orderby' => 'menu_order',
 			  'background' => '#000000', 'class' => 'subpages',
 			  'size_small' => '120x90', 'size_med' => '160x120',

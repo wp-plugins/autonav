@@ -5,7 +5,7 @@ Contributors: wlindley
 Donate link: http://www.wlindley.com/website/autonav/
 Tags: child, pages, posts, navigation, gallery, thumbnail, thumbnails, attachments, subpage, taxonomy, custom post types, custom fields
 Requires at least: 3.5
-Tested up to: 3.5.2
+Tested up to: 3.8
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -80,7 +80,7 @@ wp-content/uploads/project2 directory, in the specified order.
 
 For compability with the [gallery] ids parameter introduced in
 WordPress 3.5, displays a table of attachments with the exactly
-specified attachmed IDs.
+specified attachment IDs.
 
 == Screenshots ==
 
@@ -509,7 +509,7 @@ private.  AutoNav respects this (as does the built-in gallery
 shortcode) and will not display it.  The plugin also lets you disable
 comments and pings for an attachment.
 
-    http://www.saltriversystems.com/website/private-attachments/
+    https://github.com/lindleyw/private-attachments
 
 = Some of my images do not appear. =
 
@@ -663,6 +663,11 @@ page, post, or the like.
 * $html = apply_filters('autonav_html', $html, $attr);
   Permits you to filter the final HTML which AutoNav generates.
 
+* $html = apply_filters('autonav_missing_image', $html, $pic);
+  Filter for the text or HTML that will be displayed in the case of a missing
+  image. You can adapt or replace the standard text according to what
+  picture is missing.
+
 You can hook into any or all of these as in the example below. This
 code simply displays the contents of the attributes array, so you can
 see how it works:
@@ -755,6 +760,15 @@ parameters, you will need to go to the AutoNav Settings page on the
 WordPress administration panel and save your settings.  This will add
 the required default values which permit the parameter parser to work.
 
+= 1.5.6 =
+
+Lists will use the class given in the class= argument directly,
+without appending "-list" and the enclosed items will omit the class
+entirely.  You may need to modify your stylesheet along these lines:
+
+    From: .myclass-list { ... }  .myclass-item { ... }
+    To:   .myclass ul { ... }    .myclass ul li { ... }
+
 = 1.5.0 =
 
 If you have used the Media Tags plugin, you must set the taxonomies on
@@ -779,13 +793,28 @@ suppressing default behaviors.
 
 = 1.5.6 =
 
+* Three new CSS classes complement the existing `subpages-cell`:
+   - `subpages-item` for all items in a list, including current
+   - `subpages-item-current only` for the link to the currently displayed page
+   - `subpages-cell` for all cells in a table
+   - `subpages-cell-current` only for the link to the currently displayed page
 * Eliminate undocumented requirement for postid parameter with
   display="posts".
-
-= 1.5.5 =
-
+* Remove spurious brace in pages class.
 * Add ids= argument for compatibility with standard [gallery]
   shortcode.
+* Siblings of a top-level page, are other children of the homepage.
+* Lists will use the class given in the class= argument directly,
+  without appending "-list" and the enclosed items will omit the class
+  entirely.  This enables, for example, using the popular FlexSlider
+  or similar plugins like this:
+
+    <div class="flex-container"><div class="flexslider">
+    [autonav display="list" class="slider"]
+    </div></div>
+
+  For full information on sliders, consult your plugin's or
+  JavaScript's documentation.
 
 = 1.5.4 =
 
@@ -1034,48 +1063,7 @@ Corrected typo
 = 1.0 =
 * Initial version on wordpress.org
 
-== TODO ==
-
-* Revisit whether autonav_pick_files filter is be called for _each_
-  attached file. This needs to happen _after_ all attachments have
-  been added, and we need to have the ['menu_order'] of the attachment
-  so we can implement:  [autonav display=attached include="#1,#3"]
-  However that needs to happen _after_ the handling of start= and
-  count= ...   (2011-11-12)
-
-* BUG: the postid="foo:bar" for pages sets meta_tag and value for
-  custom field types, but does not yet support custom taxonomies. For
-  posts, if the taxonomy "foo" exists, that will be used; otherwise it
-  will look for the custom field "foo".  
-
-* Test the creation of $pic_size_info[]['date'] when scanning folders.
-  Add code to permit orderby="date" to work with display="/folder"
-
-* Several calculations of pic_full_path -- can we rationalize?
-
-* Ensure that the 'include' parameter for e.g., posts, does not
-  conflict with autonav_select_include() as called by the
-  autonav_pick_files filter.  Perhaps we need a special flag in $attr?
-
-* Consider: in autonav_wl_shortcode(), use autonav_get_
-  postid_modifiers() to ALSO parse the display= parameter.
-
-= Possible future extensions =
-
-* Eventual Version 2.0 plan is for postid is to permit more advanced
-  general queries as described here:
-  http://ottopress.com/2010/wordpress-3-1-advanced-taxonomy-queries/
-
-* Support S3 and similar plugins. Probably will only work with
-  Attachments, and will add custom sizes to the 'sizes' array in the
-  attachment's metadata.  Although the metadata gets flushed under
-  certain circumstances [when?] this should allow AutoNav to work
-  seamlessly with any S3 or similar plugin that keeps attachment
-  images in places other than the local filesystem. On hold pending
-  better definition, or a sponsor for this project.
-
-* Support creation of thumbnails for PDF and other attachment types,
-  possibly through filters and auxiliary plugins.
+== Development Notes ==
 
 * [Note 20120111] Other filetypes handled in get_images_from_folder()
   must take care to let actual images take priority regardless of
